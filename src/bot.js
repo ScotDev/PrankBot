@@ -170,7 +170,6 @@ bot.on('messageCreate', message => {
     }
 })
 
-
 // Scheduled functions
 const rule = new schedule.RecurrenceRule();
 rule.hour = 05;
