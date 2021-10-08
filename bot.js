@@ -44,7 +44,7 @@ const checkJokes = (message) => {
             }
         }).catch((err) => {
             console.log(err)
-            if (!res.data.success || err) {
+            if (err) {
                 message.channel.send("Could not retrieve joke, unspecified error")
             }
         })
