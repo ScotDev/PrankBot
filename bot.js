@@ -142,6 +142,7 @@ const showHelpMenu = (message) => {
         .setTitle("List of commands")
         .setDescription('Commands accepted by this bot')
         .setThumbnail('https://upload.wikimedia.org/wikipedia/commons/e/e3/Limmy86times.jpg')
+        .setAuthor('ScotDev', 'https://avatars.githubusercontent.com/u/44685094?v=4', 'https://github.com/ScotDev/PrankBot')
         .addFields(
             // { name: 'Current commands', value: 'Some value here' },
             // { name: '\u200B', value: '\u200B' },
