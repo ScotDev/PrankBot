@@ -48,7 +48,6 @@ const checkJokes = (message) => {
                 message.channel.send("Could not retrieve joke, unspecified error")
             }
         })
-
     }
 }
 
