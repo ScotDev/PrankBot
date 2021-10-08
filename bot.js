@@ -140,6 +140,22 @@ const showHelpMenu = (message) => {
     const helpEmbed = new MessageEmbed()
         .setColor('#0099ff')
         .setTitle("List of commands")
+        .setDescription('Commands accepted by this bot')
+        .setThumbnail('https://upload.wikimedia.org/wikipedia/commons/e/e3/Limmy86times.jpg')
+        .addFields(
+            // { name: 'Current commands', value: 'Some value here' },
+            // { name: '\u200B', value: '\u200B' },
+            { name: '?help', value: 'Shows list of commands', inline: true },
+            { name: '?gif oof', value: 'Posts limmy oof gif', inline: true },
+            { name: '?gif naw', value: 'Posts limmy naw gif', inline: true },
+            { name: '?gif blahem', value: 'Posts limmy blahem gif', inline: true },
+            { name: '?gif weans', value: 'Posts limmy weans gif', inline: true },
+            { name: '?gif dance', value: 'Posts dancing on Thatcher\'s grave  gif', inline: true },
+            { name: '?gif dance', value: 'Posts dancing on Thatcher\'s grave  gif', inline: true },
+            { name: '?chat', value: 'Starts chat thread (INCOMPLETE DEVELOPMENT)', inline: true },
+            { name: 'Easter eggs', value: 'There are some partially hidden easter eggs linked to keywords :)', inline: true },
+        )
+        .setFooter('ScotDev', 'https://avatars.githubusercontent.com/u/44685094?v=4');
     message.channel.send({ embeds: [helpEmbed] })
 }
 
