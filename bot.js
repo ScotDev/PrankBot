@@ -1,27 +1,43 @@
 require('dotenv').config();
 const axios = require("axios").default;
 const schedule = require('node-schedule');
+const { bold, italic, blockQuote } = require('@discordjs/builders');
 
-const dadOptions = {
-    method: 'GET',
-    url: 'https://dad-jokes.p.rapidapi.com/random/joke',
-    headers: {
-        'x-rapidapi-host': process.env.X_RAPIDAPI_HOST,
-        'x-rapidapi-key': process.env.X_RAPIDAPI_KEY
-    }
-};
-
+// Discord.js basic config
 const { Client, Intents, MessageEmbed } = require('discord.js');
 const bot = new Client({ intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES, Intents.FLAGS.GUILD_MESSAGE_REACTIONS, Intents.FLAGS.GUILD_WEBHOOKS] });
 
+// Logs bot into server
 bot.login(process.env.BOT_TOKEN)
 
 bot.once('ready', () => {
     console.log(`${bot.user.username} is ready!`);
 });
 
+// Custom debug config
+let debug = false;
+
+const setDebug = async (message) => {
+    // if (message.content === "setDebug") {
+    debug = !debug
+    let formattedMsg = blockQuote(`Debug state has been set to ${debug}`)
+    message.channel.send(formattedMsg)
+    console.log(`Debug state is ${debug}`)
+    // }
+}
+
+// Custom functions
 // Keyword triggers
 const checkJokes = (message) => {
+
+    const dadOptions = {
+        method: 'GET',
+        url: 'https://dad-jokes.p.rapidapi.com/random/joke',
+        headers: {
+            'x-rapidapi-host': process.env.X_RAPIDAPI_HOST,
+            'x-rapidapi-key': process.env.X_RAPIDAPI_KEY
+        }
+    };
 
     const [...words] = message.content
         .trim()
@@ -29,23 +45,28 @@ const checkJokes = (message) => {
         // Matches whitespace
         .split(/\s+/)
 
-    console.log(words)
+    // console.log(words)
 
     // Declared test cases (keywords)
-    const jokeVals = ["patter", "joke", "funny"]
+    const jokeVals = ["patter", "joke", "funny", "Patter", "Joke", "Funny"]
     // Tests to see if message content includes the specified keywords
     if (jokeVals.some(item => words.includes(item))) {
         message.reply("Oh you think that's funny?")
         axios.request(dadOptions).then((res) => {
             message.channel.send(res.data.body[0].setup)
             message.channel.send(res.data.body[0].punchline)
-            if (!res.data.success) {
-                message.channel.send("Could not retrieve joke, daily call limit reached")
-            }
         }).catch((err) => {
-            console.log(err)
-            if (err) {
-                message.channel.send("Could not retrieve joke, unspecified error")
+            let status = err.response.status
+            if (status === 429) {
+                message.channel.send("Daily call limit reached, limit will reset in 24 hours")
+            }
+            if (String(status).startsWith("5")) {
+                message.channel.send("Could not retrieve joke, server issue")
+            }
+            if (debug) {
+                const formattedMessage = blockQuote(italic(`Server response code: ${String(status)}`));
+                message.channel.send(formattedMessage)
+                console.log(err)
             }
         })
     }
@@ -55,27 +76,23 @@ bot.on('messageCreate', message => {
     // Ignores bot messages so it doesn't reply in a loop to itself
     if (message.author.bot) return;
     checkJokes(message)
+    getGifBySearchTerm(message)
 
-    if (message.content.includes("bean")) {
-        console.log("beaned")
+    if (message.content.includes("bean") || message.content.includes("Bean")) {
         message.reply({ content: "You got frickin beaned kid!", files: ["https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Heinz_Beanz.jpg/320px-Heinz_Beanz.jpg"] })
     }
 
-    if (message.content.includes("cabbage")) {
-        console.log("Cabbaged")
+    if (message.content.includes("cabbage") || message.content.includes("Cabbage")) {
         message.reply({ content: "You're getting cabbaged tonight mate" })
         message.reply({ content: "https://www.youtube.com/watch?v=QxBsClrLPEU&t=1s" })
     }
 
-    if (message.content.includes("d&d")) {
+    if (message.content.includes("d&d") || message.content.includes("D&D") || message.content.includes("D&d")) {
         message.channel.send("Roll a new character")
     }
 })
 
-// COMMANDS
-const PREFIX = "?";
-
-// Thread creator function
+// Thread creator
 const createThread = async (message) => {
     let channelID;
     const thread = await message.channel.threads.create({
@@ -94,23 +111,27 @@ const createThread = async (message) => {
     // const latestThread = message.channel.threads.cache.find(x => x.name === "New AI chat thread")
     const latestThread = message.channel.threads.cache.find(x => x.id === channelID)
     // if (latestThread.joinable) await latestThread.join()
-    console.log(channelID)
-    latestThread.send("You've started a new conversation with an advanced AI chatbot. Ask it anything!")
-    latestThread.send("This chat wil auto-archive if no messages are sent or received for 60 minutes")
+    const chatWelcomeMsg = bold("You've started a new conversation with an advanced AI chatbot. Ask it anything!")
+    latestThread.send(chatWelcomeMsg)
+    const archiveWarning = italic("This chat wil auto-archive if no messages are sent or received for 60 minutes")
+    latestThread.send(archiveWarning)
 }
 // Get GIF by id
-const getGifbyId = (message, args) => {
+const getGifbyId = async (message, args) => {
     switch (args[0]) {
         case "oof":
             gifID = 11168012;
             break;
-        case "blahem":
-            gifID = 21643022;
-            break
+        // case "blahem":
+        //     gifID = 21643022;
+        //     break
         case "naw":
             gifID = 14030300;
             break
         case "dance":
+            gifID = 18802854;
+            break
+        case "thatcher":
             gifID = 18802854;
             break
         case "weans":
@@ -124,15 +145,72 @@ const getGifbyId = (message, args) => {
         method: "get",
         url: `https://g.tenor.com/v1/gifs?ids=${gifID}&key=${process.env.TENOR_KEY}`,
     }
+    let status;
     axios.request(tenorOptions)
-        // .then(res => console.log(res.data.results[0].url))
-        .then(res => message.channel.send(res.data.results[0].url))
+        .then(res => {
+            if (debug) {
+                console.log(res.status)
+                status = res.status;
+                const formattedMessage = blockQuote(italic(`Server response code: ${String(status)}`));
+                message.channel.send(formattedMessage)
+            }
+            message.channel.send(res.data.results[0].url)
+        })
         .catch((err) => {
-            console.log(err)
             if (err) {
-                message.channel.send("Could not retrieve gif right now, unspecified error")
+                message.channel.send("Could not retrieve gif right now")
+                console.log(err)
             }
         })
+}
+// Get GIF by search term
+const getGifBySearchTerm = async (message) => {
+    const [...words] = message.content
+        .trim()
+        .substring(0)
+        // Matches whitespace
+        .split(/\s+/)
+
+    console.log(words)
+
+    const randomNumInRange = () => {
+        return Math.floor(Math.random() * 5) + 1
+    }
+
+    // Declared test cases (keywords)
+    const keywordVals = ["cum", "blahem", "limmy", "Cum", "Blahem", "Limmy"]
+    // Tests to see if message content includes the specified keywords
+    if (keywordVals.some(item => words.includes(item))) {
+        message.reply("Check this out")
+        console.log(randomNumInRange())
+
+        const tenorOptions = {
+            method: "get",
+            url: `https://g.tenor.com/v1/search?q=${message}&key=${process.env.TENOR_KEY}&limit=5`,
+        }
+        let status;
+        axios.request(tenorOptions)
+            // .then(res => console.log(res.data.results[0].url))
+            .then(res => {
+                if (debug) {
+                    console.log(res.status)
+                    status = res.status;
+                    const formattedMessage = blockQuote(italic(`Server response code: ${String(status)}`));
+                    message.channel.send(formattedMessage)
+                }
+                message.channel.send(res.data.results[randomNumInRange()].url)
+            })
+            .catch((err) => {
+                console.log(err)
+                if (err) {
+                    message.channel.send("Could not retrieve gifs right now, unspecified error")
+                }
+            })
+
+    }
+
+
+
 }
 
 // Show list of command
@@ -152,13 +230,15 @@ const showHelpMenu = (message) => {
             { name: '?gif blahem', value: 'Posts limmy blahem gif', inline: true },
             { name: '?gif weans', value: 'Posts limmy weans gif', inline: true },
             { name: '?gif dance', value: 'Posts dancing on Thatcher\'s grave  gif', inline: true },
-            { name: '?gif dance', value: 'Posts dancing on Thatcher\'s grave  gif', inline: true },
             { name: '?chat', value: 'Starts chat thread (INCOMPLETE DEVELOPMENT)', inline: true },
             { name: 'Easter eggs', value: 'There are some partially hidden easter eggs linked to keywords :)', inline: true },
         )
         .setFooter('ScotDev', 'https://avatars.githubusercontent.com/u/44685094?v=4');
     message.channel.send({ embeds: [helpEmbed] })
 }
+
+// COMMANDS
+const PREFIX = "?";
 
 bot.on('messageCreate', message => {
     // Ignores bot messages so it doesn't reply in a loop to itself
@@ -172,9 +252,9 @@ bot.on('messageCreate', message => {
             // Matches whitespace
             .split(/\s+/)
 
-        if (COMMAND_NAME === "test") {
-            console.log("cmd test")
-        }
+        // if (COMMAND_NAME === "test") {
+        //     console.log("cmd test")
+        // }
         if (COMMAND_NAME === "chat") {
             createThread(message)
         }
@@ -184,6 +264,9 @@ bot.on('messageCreate', message => {
         if (COMMAND_NAME === "help") {
             showHelpMenu(message)
         }
+        if (COMMAND_NAME === "debug") {
+            setDebug(message, args)
+        }
     }
 })
 
@@ -191,10 +274,6 @@ bot.on('messageCreate', message => {
 const rule = new schedule.RecurrenceRule();
 rule.hour = 05;
 rule.minute = 00;
-
-// const client = new Discord.Client();
-// const generalChannel = bot.channels.cache.find(channel => channel.name === 'general');
-// const channel = client.channels.get("563083228274098238");
 const job = schedule.scheduleJob(rule, function () {
     const generalChannel = bot.channels.cache.find(channel => channel.name === 'general');
     generalChannel.send("https://i.imgur.com/qufjBuS.jpg")
