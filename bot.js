@@ -227,10 +227,11 @@ const showHelpMenu = (message) => {
             { name: '?help', value: 'Shows list of commands', inline: true },
             { name: '?gif oof', value: 'Posts limmy oof gif', inline: true },
             { name: '?gif naw', value: 'Posts limmy naw gif', inline: true },
-            { name: '?gif blahem', value: 'Posts limmy blahem gif', inline: true },
+            // { name: '?gif blahem', value: 'Posts limmy blahem gif', inline: true },
             { name: '?gif weans', value: 'Posts limmy weans gif', inline: true },
             { name: '?gif dance', value: 'Posts dancing on Thatcher\'s grave  gif', inline: true },
             { name: '?chat', value: 'Starts chat thread (INCOMPLETE DEVELOPMENT)', inline: true },
+            { name: '?debug', value: 'Turns on debugger. Using command again will turn off', inline: true },
             { name: 'Easter eggs', value: 'There are some partially hidden easter eggs linked to keywords :)', inline: true },
         )
         .setFooter('ScotDev', 'https://avatars.githubusercontent.com/u/44685094?v=4');
