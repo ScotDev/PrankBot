@@ -18,12 +18,10 @@ bot.once('ready', () => {
 let debug = false;
 
 const setDebug = async (message) => {
-    // if (message.content === "setDebug") {
     debug = !debug
     let formattedMsg = blockQuote(`Debug state has been set to ${debug}`)
     message.channel.send(formattedMsg)
     console.log(`Debug state is ${debug}`)
-    // }
 }
 
 // Custom functions
@@ -48,6 +46,7 @@ const checkJokes = (message) => {
     // console.log(words)
 
     // Declared test cases (keywords)
+    // Could be improved with case insensitivity in regex. Currently not important enough to change.
     const jokeVals = ["patter", "joke", "funny", "Patter", "Joke", "Funny"]
     // Tests to see if message content includes the specified keywords
     if (jokeVals.some(item => words.includes(item))) {
@@ -58,11 +57,11 @@ const checkJokes = (message) => {
         }).catch((err) => {
             let status = err.response.status
             if (status === 429) {
-                message.channel.send("Daily call limit reached, limit will reset in 24 hours")
+                message.channel.send("Daily call limit for jokes reached, limit will reset in 24 hours")
             }
-            if (String(status).startsWith("5")) {
-                message.channel.send("Could not retrieve joke, server issue")
-            }
+            // if (String(status).startsWith("5")) {
+            //     message.channel.send("Could not retrieve joke, server issue")
+            // }
             if (debug) {
                 const formattedMessage = blockQuote(italic(`Server response code: ${String(status)}`));
                 message.channel.send(formattedMessage)
@@ -76,7 +75,7 @@ bot.on('messageCreate', message => {
     // Ignores bot messages so it doesn't reply in a loop to itself
     if (message.author.bot) return;
     checkJokes(message)
-    getGifBySearchTerm(message)
+    getGifByKeyword(message)
 
     if (message.content.includes("bean") || message.content.includes("Bean")) {
         message.reply({ content: "You got frickin beaned kid!", files: ["https://upload.wikimedia.org/wikipedia/commons/thumb/d/d9/Heinz_Beanz.jpg/320px-Heinz_Beanz.jpg"] })
@@ -163,18 +162,18 @@ const getGifbyId = async (message, args) => {
             }
         })
 }
-// Get GIF by search term
-const getGifBySearchTerm = async (message) => {
+// Get GIF by keyword match
+const getGifByKeyword = async (message) => {
     const [...words] = message.content
         .trim()
         .substring(0)
         // Matches whitespace
         .split(/\s+/)
 
-    console.log(words)
+    // console.log(words)
 
-    const randomNumInRange = () => {
-        return Math.floor(Math.random() * 5) + 1
+    const randomNumInRange = (min, max) => {
+        return Math.floor(Math.random() * (max - min + 1) + min)
     }
 
     // Declared test cases (keywords)
@@ -182,34 +181,43 @@ const getGifBySearchTerm = async (message) => {
     // Tests to see if message content includes the specified keywords
     if (keywordVals.some(item => words.includes(item))) {
         message.reply("Check this out")
-        console.log(randomNumInRange())
-
         const tenorOptions = {
             method: "get",
-            url: `https://g.tenor.com/v1/search?q=${message}&key=${process.env.TENOR_KEY}&limit=5`,
+            url: `https://g.tenor.com/v1/search?q=${message}&key=${process.env.TENOR_KEY}`,
         }
         let status;
+        let count;
         axios.request(tenorOptions)
             // .then(res => console.log(res.data.results[0].url))
             .then(res => {
+                count = res.data.results.length
                 if (debug) {
-                    console.log(res.status)
+                    // console.log(res)
+                    console.log("Count: ", count)
                     status = res.status;
+                    console.log(status)
                     const formattedMessage = blockQuote(italic(`Server response code: ${String(status)}`));
                     message.channel.send(formattedMessage)
                 }
-                message.channel.send(res.data.results[randomNumInRange()].url)
+                if (count > 0) {
+                    const randInt = randomNumInRange(1, count)
+                    message.channel.send("test")
+                    message.channel.send(res.data.results[randInt].url)
+                } else {
+                    message.channel.send("No results found for that search term!")
+                }
             })
             .catch((err) => {
                 console.log(err)
                 if (err) {
-                    message.channel.send("Could not retrieve gifs right now, unspecified error")
+                    message.channel.send("Could not retrieve gifs right now")
                 }
             })
 
     }
+}
 
-
+const getGifbySearchTerm = (message, args) => {
 
 }
 
@@ -222,17 +230,15 @@ const showHelpMenu = (message) => {
         .setThumbnail('https://upload.wikimedia.org/wikipedia/commons/e/e3/Limmy86times.jpg')
         .setAuthor('ScotDev', 'https://avatars.githubusercontent.com/u/44685094?v=4', 'https://github.com/ScotDev/PrankBot')
         .addFields(
-            // { name: 'Current commands', value: 'Some value here' },
-            // { name: '\u200B', value: '\u200B' },
             { name: '?help', value: 'Shows list of commands', inline: true },
             { name: '?gif oof', value: 'Posts limmy oof gif', inline: true },
             { name: '?gif naw', value: 'Posts limmy naw gif', inline: true },
-            // { name: '?gif blahem', value: 'Posts limmy blahem gif', inline: true },
             { name: '?gif weans', value: 'Posts limmy weans gif', inline: true },
             { name: '?gif dance', value: 'Posts dancing on Thatcher\'s grave  gif', inline: true },
-            { name: '?chat', value: 'Starts chat thread (INCOMPLETE DEVELOPMENT)', inline: true },
-            { name: '?debug', value: 'Turns on debugger. Using command again will turn off', inline: true },
+            // { name: '?chat', value: 'Starts chat thread (INCOMPLETE DEVELOPMENT)', inline: true },
+            { name: 'Keywords', value: 'Typing "Limmy", "blahem" or "cum" will find a related gif', inline: true },
             { name: 'Easter eggs', value: 'There are some partially hidden easter eggs linked to keywords :)', inline: true },
+            { name: '?debug', value: 'Turns on debugger. Using command again will turn off', inline: true }
         )
         .setFooter('ScotDev', 'https://avatars.githubusercontent.com/u/44685094?v=4');
     message.channel.send({ embeds: [helpEmbed] })
