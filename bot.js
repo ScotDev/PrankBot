@@ -201,7 +201,6 @@ const getGifByKeyword = async (message) => {
                 }
                 if (count > 0) {
                     const randInt = randomNumInRange(1, count)
-                    message.channel.send("test")
                     message.channel.send(res.data.results[randInt].url)
                 } else {
                     message.channel.send("No results found for that search term!")
@@ -217,9 +216,9 @@ const getGifByKeyword = async (message) => {
     }
 }
 
-const getGifbySearchTerm = (message, args) => {
+// const getGifbySearchTerm = (message, args) => {
 
-}
+// }
 
 // Show list of command
 const showHelpMenu = (message) => {
