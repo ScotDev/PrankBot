@@ -279,7 +279,7 @@ bot.on('messageCreate', message => {
 
 // Scheduled functions
 const rule = new schedule.RecurrenceRule();
-rule.hour = 05;
+rule.hour = 04;
 rule.minute = 00;
 const job = schedule.scheduleJob(rule, function () {
     const generalChannel = bot.channels.cache.find(channel => channel.name === 'general');
