@@ -115,23 +115,41 @@ const createThread = async (message) => {
     const archiveWarning = italic("This chat wil auto-archive if no messages are sent or received for 60 minutes")
     latestThread.send(archiveWarning)
 }
+
+// Get dance GIF 
+const getDanceGif = (message) => {
+    const gifID = 18802854;
+
+    const tenorOptions = {
+        method: "get",
+        url: `https://g.tenor.com/v1/gifs?ids=${gifID}&key=${process.env.TENOR_KEY}`,
+    }
+    let status;
+    axios.request(tenorOptions)
+        .then(res => {
+            if (debug) {
+                console.log(res.status)
+                status = res.status;
+                const formattedMessage = blockQuote(italic(`Server response code: ${String(status)}`));
+                message.channel.send(formattedMessage)
+            }
+            message.channel.send(res.data.results[0].url)
+        })
+        .catch((err) => {
+            if (err) {
+                message.channel.send("Could not retrieve gif right now")
+                console.log(err)
+            }
+        })
+}
 // Get GIF by id
 const getGifbyId = async (message, args) => {
     switch (args[0]) {
         case "oof":
             gifID = 11168012;
             break;
-        // case "blahem":
-        //     gifID = 21643022;
-        //     break
         case "naw":
             gifID = 14030300;
-            break
-        case "dance":
-            gifID = 18802854;
-            break
-        case "thatcher":
-            gifID = 18802854;
             break
         case "weans":
             gifID = 20022960;
@@ -170,8 +188,6 @@ const getGifByKeyword = async (message) => {
         // Matches whitespace
         .split(/\s+/)
 
-    // console.log(words)
-
     const randomNumInRange = (min, max) => {
         return Math.floor(Math.random() * (max - min + 1) + min)
     }
@@ -180,19 +196,16 @@ const getGifByKeyword = async (message) => {
     const keywordVals = ["cum", "blahem", "limmy", "Cum", "Blahem", "Limmy"]
     // Tests to see if message content includes the specified keywords
     if (keywordVals.some(item => words.includes(item))) {
-        message.reply("Check this out")
         const tenorOptions = {
             method: "get",
-            url: `https://g.tenor.com/v1/search?q=${message}&key=${process.env.TENOR_KEY}`,
+            url: `https://g.tenor.com/v1/search?q=${words[0]}&key=${process.env.TENOR_KEY}`,
         }
         let status;
         let count;
         axios.request(tenorOptions)
-            // .then(res => console.log(res.data.results[0].url))
             .then(res => {
                 count = res.data.results.length
                 if (debug) {
-                    // console.log(res)
                     console.log("Count: ", count)
                     status = res.status;
                     console.log(status)
@@ -201,7 +214,7 @@ const getGifByKeyword = async (message) => {
                 }
                 if (count > 0) {
                     const randInt = randomNumInRange(1, count)
-                    message.channel.send(res.data.results[randInt].url)
+                    message.reply(res.data.results[randInt].url)
                 } else {
                     message.channel.send("No results found for that search term!")
                 }
@@ -212,13 +225,45 @@ const getGifByKeyword = async (message) => {
                     message.channel.send("Could not retrieve gifs right now")
                 }
             })
-
     }
 }
 
-// const getGifbySearchTerm = (message, args) => {
+const getGifbySearchTerm = (message, args) => {
+    let status;
+    let count;
+    let keyword = args[0]
+    const randomNumInRange = (min, max) => {
+        return Math.floor(Math.random() * (max - min + 1) + min)
+    }
+    const tenorOptions = {
+        method: "get",
+        url: `https://g.tenor.com/v1/search?q=${keyword}&key=${process.env.TENOR_KEY}`,
+    }
 
-// }
+    axios.request(tenorOptions)
+        .then(res => {
+            count = res.data.results.length
+            if (debug) {
+                console.log("Count: ", count)
+                status = res.status;
+                console.log(status)
+                const formattedMessage = blockQuote(italic(`Server response code: ${String(status)}`));
+                message.channel.send(formattedMessage)
+            }
+            if (count > 0) {
+                const randInt = randomNumInRange(1, count)
+                message.reply(res.data.results[randInt].url)
+            } else {
+                message.channel.send("No results found for that search term!")
+            }
+        })
+        .catch((err) => {
+            console.log(err)
+            if (err) {
+                message.channel.send("Could not retrieve gifs right now")
+            }
+        })
+}
 
 // Show list of command
 const showHelpMenu = (message) => {
@@ -229,15 +274,15 @@ const showHelpMenu = (message) => {
         .setThumbnail('https://upload.wikimedia.org/wikipedia/commons/e/e3/Limmy86times.jpg')
         .setAuthor('ScotDev', 'https://avatars.githubusercontent.com/u/44685094?v=4', 'https://github.com/ScotDev/PrankBot')
         .addFields(
-            { name: '?help', value: 'Shows list of commands', inline: true },
-            { name: '?gif oof', value: 'Posts limmy oof gif', inline: true },
-            { name: '?gif naw', value: 'Posts limmy naw gif', inline: true },
-            { name: '?gif weans', value: 'Posts limmy weans gif', inline: true },
-            { name: '?gif dance', value: 'Posts dancing on Thatcher\'s grave  gif', inline: true },
+            { name: `?${helpCommand}`, value: 'Shows list of commands', inline: true },
+            { name: `?${limmyGifCommand} + keyword `, value: 'Posts limmy gif. Specify keyword \'oof\' \'naw\' or \'weans\'.', inline: true },
+
+            { name: `?${gifSearchCommand} + search term`, value: 'Searches for gif by keyword. Only accepts one keyword to search by', inline: true },
             // { name: '?chat', value: 'Starts chat thread (INCOMPLETE DEVELOPMENT)', inline: true },
             { name: 'Keywords', value: 'Typing "Limmy", "blahem" or "cum" will find a related gif', inline: true },
             { name: 'Easter eggs', value: 'There are some partially hidden easter eggs linked to keywords :)', inline: true },
-            { name: '?debug', value: 'Turns on debugger. Using command again will turn off', inline: true }
+            { name: `?${debugCommand}`, value: 'Turns on debugger. Using command again will turn off', inline: true },
+            { name: `?${danceCommand} or ?thatcher`, value: 'Posts dancing on Thatcher\'s grave  gif', inline: true }
         )
         .setFooter('ScotDev', 'https://avatars.githubusercontent.com/u/44685094?v=4');
     message.channel.send({ embeds: [helpEmbed] })
@@ -245,6 +290,12 @@ const showHelpMenu = (message) => {
 
 // COMMANDS
 const PREFIX = "?";
+const helpCommand = "help";
+const chatCommand = "chat";
+const limmyGifCommand = "limmy";
+const gifSearchCommand = "gif";
+const danceCommand = "dance"
+const debugCommand = "debug";
 
 bot.on('messageCreate', message => {
     // Ignores bot messages so it doesn't reply in a loop to itself
@@ -258,19 +309,22 @@ bot.on('messageCreate', message => {
             // Matches whitespace
             .split(/\s+/)
 
-        // if (COMMAND_NAME === "test") {
-        //     console.log("cmd test")
-        // }
-        if (COMMAND_NAME === "chat") {
+        if (COMMAND_NAME === chatCommand) {
             createThread(message)
         }
-        if (COMMAND_NAME === "gif") {
+        if (COMMAND_NAME === limmyGifCommand) {
             getGifbyId(message, args)
         }
-        if (COMMAND_NAME === "help") {
+        if (COMMAND_NAME === helpCommand) {
             showHelpMenu(message)
         }
-        if (COMMAND_NAME === "debug") {
+        if (COMMAND_NAME === gifSearchCommand) {
+            getGifbySearchTerm(message, args)
+        }
+        if (COMMAND_NAME === danceCommand || COMMAND_NAME === "thatcher") {
+            getDanceGif(message)
+        }
+        if (COMMAND_NAME === debugCommand) {
             setDebug(message, args)
         }
     }
